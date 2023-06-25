@@ -3,23 +3,21 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { signIn, signOut, getProviders } from "next-auth/react";
+import { signIn, signOut, getProviders, useSession } from "next-auth/react";
 
 const Nav = () => {
+  const { data: session } = useSession();
+
   const [providers, setProviders] = useState(null);
   const [toggleDropdown, setToggleDropDown] = useState(false);
 
   useEffect(() => {
-    const SetProviders = async () => {
-      const response = await getProviders();
-
-      setProviders(response);
-    };
-
-    SetProviders();
+    (async () => {
+      const res = await getProviders();
+      setProviders(res);
+    })();
   }, []);
 
-  const isLogged = true;
   return (
     <nav className="flex-between w-full mb-16 pt-3">
       <Link href="/" className="flex gap-2 flex-center">
@@ -35,7 +33,7 @@ const Nav = () => {
 
       {/* Desktop */}
       <div className="sm:flex hidden">
-        {isLogged ? (
+        {session?.user ? (
           <div className="flex gap-3 md:gap-5">
             <Link href="/create-prompt" className="black_btn">
               Create post
@@ -47,7 +45,7 @@ const Nav = () => {
 
             <Link href="/profile">
               <Image
-                src="assets/images/logo.svg"
+                src={session?.user.image}
                 width={37}
                 height={37}
                 className="rounded-full"
@@ -63,7 +61,9 @@ const Nav = () => {
                   type="button"
                   key={provider.name}
                   className="black_btn"
-                  onClick={() => signIn(provider.id)}
+                  onClick={() => {
+                    signIn(provider.id);
+                  }}
                 >
                   Sing In
                 </button>
@@ -73,61 +73,65 @@ const Nav = () => {
       </div>
 
       {/* Mobile */}
-      {isLogged ? (
-        <div className="sm:hidden flex relative">
-          <Image
-            src="assets/images/logo.svg"
-            width={37}
-            height={37}
-            className="rounded-full"
-            alt="profile"
-            onClick={() => setToggleDropDown((prev) => !prev)}
-          />
+      <div className="sm:hidden flex relative">
+        {session?.user ? (
+          <div className="flex">
+            <Image
+              src={session?.user.image}
+              width={37}
+              height={37}
+              className="rounded-full"
+              alt="profile"
+              onClick={() => setToggleDropDown((prev) => !prev)}
+            />
 
-          {toggleDropdown && (
-            <div className="dropdown">
-              <Link
-                href="/profile"
-                className="dropdown_link self-center"
-                onClick={() => setToggleDropDown(false)}
-              >
-                My profile
-              </Link>
-              <Link
-                href="/create-prompt"
-                className="dropdown_link self-center"
-                onClick={() => setToggleDropDown(false)}
-              >
-                Create post
-              </Link>
-              <button
-                type="button"
-                className="black_btn mt-5 w-full"
-                onClick={() => {
-                  setToggleDropDown(false);
-                  signOut();
-                }}
-              >
-                Sign Out
-              </button>
-            </div>
-          )}
-        </div>
-      ) : (
-        <>
-          {providers &&
-            Object.values(providers).map((provider) => (
-              <button
-                type="button"
-                key={provider.name}
-                className="black_btn"
-                onClick={() => signIn(provider.id)}
-              >
-                Sing In
-              </button>
-            ))}
-        </>
-      )}
+            {toggleDropdown && (
+              <div className="dropdown">
+                <Link
+                  href="/profile"
+                  className="dropdown_link self-center"
+                  onClick={() => setToggleDropDown(false)}
+                >
+                  My profile
+                </Link>
+                <Link
+                  href="/create-prompt"
+                  className="dropdown_link self-center"
+                  onClick={() => setToggleDropDown(false)}
+                >
+                  Create post
+                </Link>
+                <button
+                  type="button"
+                  className="black_btn mt-5 w-full"
+                  onClick={() => {
+                    setToggleDropDown(false);
+                    signOut();
+                  }}
+                >
+                  Sign Out
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            {providers &&
+              Object.values(providers).map((provider) => (
+                <button
+                  type="button"
+                  key={provider.name}
+                  className="black_btn"
+                  onClick={() => {
+                    signIn(provider.id);
+                  }}
+                >
+                  Sing In
+                </button>
+              ))}
+          </>
+        )}
+      </div>
     </nav>
   );
 };
